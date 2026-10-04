@@ -21,6 +21,7 @@ use App\Traits\Filament\CanCustomizeRelations;
 use App\Traits\Filament\CanModifyForm;
 use App\Traits\Filament\CanModifyTable;
 use BackedEnum;
+use DateTimeZone;
 use Exception;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
@@ -101,7 +102,7 @@ class ScheduleResource extends Resource
                 Section::make(trans('server/schedule.cron'))
                     ->description(function (Get $get) {
                         try {
-                            $nextRun = Utilities::getScheduleNextRunDate($get('cron_minute'), $get('cron_hour'), $get('cron_day_of_month'), $get('cron_month'), $get('cron_day_of_week'))->timezone(user()->timezone ?? 'UTC');
+                            $nextRun = Utilities::getScheduleNextRunDate($get('cron_minute'), $get('cron_hour'), $get('cron_day_of_month'), $get('cron_month'), $get('cron_day_of_week'), $get('timezone') ?? 'UTC')->timezone(user()->timezone ?? 'UTC');
                         } catch (Exception) {
                             $nextRun = trans('server/schedule.invalid');
                         }
@@ -295,6 +296,14 @@ class ScheduleResource extends Resource
                                 'default' => 4,
                                 'lg' => 5,
                             ]),
+                        Select::make('timezone')
+                            ->label(trans('server/schedule.timezone'))
+                            ->required()
+                            ->default(user()->timezone ?? 'UTC')
+                            ->selectablePlaceholder(false)
+                            ->options(fn () => collect(DateTimeZone::listIdentifiers())->mapWithKeys(fn ($tz) => [$tz => $tz]))
+                            ->searchable()
+                            ->live(),
                     ])
                     ->columnSpanFull(),
             ]);
@@ -312,7 +321,8 @@ class ScheduleResource extends Resource
                     ->searchable(),
                 TextColumn::make('cron')
                     ->label(trans('server/schedule.cron'))
-                    ->state(fn (Schedule $schedule) => $schedule->cron_minute . ' ' . $schedule->cron_hour . ' ' . $schedule->cron_day_of_month . ' ' . $schedule->cron_month . ' ' . $schedule->cron_day_of_week),
+                    ->state(fn (Schedule $schedule) => $schedule->cron_minute . ' ' . $schedule->cron_hour . ' ' . $schedule->cron_day_of_month . ' ' . $schedule->cron_month . ' ' . $schedule->cron_day_of_week)
+                    ->description(fn (Schedule $schedule) => $schedule->timezone),
                 TextColumn::make('status')
                     ->label(trans('server/schedule.status'))
                     ->state(fn (Schedule $schedule) => $schedule->status->getLabel())
@@ -379,10 +389,10 @@ class ScheduleResource extends Resource
         ];
     }
 
-    public static function getNextRun(string $minute, string $hour, string $dayOfMonth, string $month, string $dayOfWeek): Carbon
+    public static function getNextRun(string $minute, string $hour, string $dayOfMonth, string $month, string $dayOfWeek, string $timezone = 'UTC'): Carbon
     {
         try {
-            return Utilities::getScheduleNextRunDate($minute, $hour, $dayOfMonth, $month, $dayOfWeek);
+            return Utilities::getScheduleNextRunDate($minute, $hour, $dayOfMonth, $month, $dayOfWeek, $timezone);
         } catch (Exception) {
             Notification::make()
                 ->title(trans('server/schedule.notification_invalid_cron'))
