@@ -10,6 +10,7 @@
             "hour": "0",
             "minute": "0"
         },
+        "timezone": "UTC",
         "is_active": true,
         "is_processing": false,
         "only_when_online": false,

@@ -64,6 +64,8 @@ class ScheduleController extends ClientApiController
      */
     public function store(StoreScheduleRequest $request, Server $server): array
     {
+        $timezone = $request->input('timezone', 'UTC');
+
         /** @var Schedule $model */
         $model = Schedule::query()->create([
             'server_id' => $server->id,
@@ -73,9 +75,10 @@ class ScheduleController extends ClientApiController
             'cron_day_of_month' => $request->input('day_of_month'),
             'cron_hour' => $request->input('hour'),
             'cron_minute' => $request->input('minute'),
+            'timezone' => $timezone,
             'is_active' => (bool) $request->input('is_active'),
             'only_when_online' => (bool) $request->input('only_when_online'),
-            'next_run_at' => $this->getNextRunAt($request),
+            'next_run_at' => $this->getNextRunAt($request, $timezone),
         ]);
 
         Activity::event('server:schedule.create')
@@ -119,6 +122,7 @@ class ScheduleController extends ClientApiController
     public function update(UpdateScheduleRequest $request, Server $server, Schedule $schedule): array
     {
         $active = (bool) $request->input('is_active');
+        $timezone = $request->input('timezone', $schedule->timezone);
 
         $data = [
             'name' => $request->input('name'),
@@ -127,9 +131,10 @@ class ScheduleController extends ClientApiController
             'cron_day_of_month' => $request->input('day_of_month'),
             'cron_hour' => $request->input('hour'),
             'cron_minute' => $request->input('minute'),
+            'timezone' => $timezone,
             'is_active' => $active,
             'only_when_online' => (bool) $request->input('only_when_online'),
-            'next_run_at' => $this->getNextRunAt($request, $schedule->timezone),
+            'next_run_at' => $this->getNextRunAt($request, $timezone),
         ];
 
         // Toggle the processing state of the scheduled task when it is enabled or disabled so that an

@@ -33,6 +33,8 @@ class StoreScheduleRequest extends ViewScheduleRequest
             'month' => $rules['cron_month'],
             /** Day of week field of the cron expression, where `0` is Sunday. */
             'day_of_week' => $rules['cron_day_of_week'],
+            /** Timezone the cron expression is evaluated in, such as `UTC` or `Europe/Amsterdam`. Defaults to `UTC`. */
+            'timezone' => array_merge(['sometimes'], $rules['timezone']),
         ];
     }
 }
